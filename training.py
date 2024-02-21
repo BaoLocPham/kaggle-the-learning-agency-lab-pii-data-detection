@@ -101,13 +101,14 @@ def train(cfg):
     # if not os.path.exists(config.output_dir):
     # If it doesn't exist, create the folder
     os.makedirs(config.output_dir, exist_ok=True)
+    os.makedirs(config.tmp_dir, exist_ok=True)
     os.makedirs(config.train_stage_1.output_dir, exist_ok=True)
     train, test, submission = read_data(
         config.root_data_dir, config=config, debug=config.debug  # type: ignore
     )
 
     LOGGER.info(f"DEBUG MODE: {config.debug}")
-    LOGGER.info(f"Train shape: {train.shape}")
+    LOGGER.info(f"Train Size: {len(train)}")
 
     all_labels = sorted(list(set(chain(*[x["labels"] for x in train]))))
     label2id = {l: i for i, l in enumerate(all_labels)}
@@ -132,7 +133,7 @@ def train(cfg):
             "label2id": label2id,
             "max_length": config.train_stage_1.max_len,
             "config": config},
-        num_proc=2)
+        num_proc=config.num_proc)
     # ds = ds.class_encode_column("group")
 
     x = ds[0]
@@ -181,7 +182,7 @@ def train(cfg):
                 param.requires_grad = False
 
     args = TrainingArguments(
-        output_dir=config.train_stage_1.output_dir,
+        output_dir=config.tmp_dir,
         fp16=config.train_stage_1.fp16,
         learning_rate=config.train_stage_1.learning_rate,
         num_train_epochs=config.train_stage_1.num_train_epochs,
