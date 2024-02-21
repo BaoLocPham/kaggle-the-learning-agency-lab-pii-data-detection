@@ -17,10 +17,10 @@ def tokenize(example, tokenizer, label2id, config: None):
         text.append(t)
         labels.extend([l] * len(t))
 
-        if l in config.target:
-            targets.append(1)
-        else:
-            targets.append(0)
+        # if l in config.target:
+        #     targets.append(1)
+        # else:
+        #     targets.append(0)
         # if there is trailing whitespace
         if ws:
             text.append(" ")
@@ -32,7 +32,7 @@ def tokenize(example, tokenizer, label2id, config: None):
         truncation=True,
         max_length=config.max_length)
 
-    target_num = sum(targets)
+    # target_num = sum(targets)
     labels = np.array(labels)
 
     text = "".join(text)
@@ -57,6 +57,6 @@ def tokenize(example, tokenizer, label2id, config: None):
         **tokenized,
         "labels": token_labels,
         "length": length,
-        "target_num": target_num,
-        "group": 1 if target_num > 0 else 0
+        # "target_num": target_num,
+        # "group": 1 if target_num > 0 else 0
     }

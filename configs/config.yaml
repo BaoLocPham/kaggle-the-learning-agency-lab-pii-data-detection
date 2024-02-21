@@ -9,10 +9,13 @@ wandb:
   job_type: Train_Supervised
 parameters:
   root_data_dir: "./data"
-  grade_data_dir: "./data"
   n_fold: 4
   save_model_dir: "./outputs"
   preprocess_text: False
+  target: [
+    "B-EMAIL", "B-ID_NUM", "B-NAME_STUDENT", "B-PHONE_NUM", 
+    "B-STREET_ADDRESS", "B-URL_PERSONAL", "B-USERNAME", "I-ID_NUM", 
+    "I-NAME_STUDENT", "I-PHONE_NUM", "I-STREET_ADDRESS", "I-URL_PERSONAL"]
   debug: False
   
   train_stage_1:
@@ -20,6 +23,7 @@ parameters:
     base_model_name: "microsoft/deberta-v3-{select}"
     model_path: ""
     output_dir: "./"
+    max_len: 512
     freeze_embeddings: False
     freeze_n_layers: 6
     seed: 42

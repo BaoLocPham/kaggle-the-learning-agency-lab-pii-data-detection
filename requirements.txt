@@ -32,7 +32,6 @@ semver==3.0.2
 stemming==1.0.1
 stop-words==2018.7.23
 tangled-up-in-unicode==0.2.0
-tensorflow==2.13.0
 timm==0.9.12
 wandb==0.16.2
 spacy==3.7.2
@@ -40,6 +39,10 @@ nltk==3.2.4
 gensim==4.3.2
 transformers==4.37.0
 torch==2.1.2
+tensorflow
 seqeval==1.2.2
 evaluate==0.4.1
 sentencepiece==0.1.99
+autocorrect
+spellchecker
+pyspellchecker

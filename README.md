@@ -1,43 +1,52 @@
-# ML-Project-Experiment-Template
+# Kaggle The Learning Agency Lab - PII Data Detection
+Develop automated techniques to detect and remove PII from educational data.
+![Banner](docs/image.png)
 
-Template for my personal Experiment Tracking hyperparameters
-
-This project base on this NeptuneAI's blog about [the Experiment Tracking](https://neptune.ai/blog/experiment-management)
-
-Using [Hydra](https://hydra.cc) for reading config files and [WANDB](https://wandb.ai) for tracking experiments
-
-This will help reduce repeated taskes and tracking your experiment more effective.
-
-## Demo
-
+# Installation
 ```
-python demo_hydra.py
-```
+# Using pip:
+pip install pre-commit
 
-Output:
 
-```
-project: ORGANIZATION/experiment-tracking
-name: experiment-tracking-default-risk
-wandb:
-  WANDB_API_KEY: YOUR_WANDB_API
-  entity: YOUR_WANDB_API
-  project: experiment-tracking
-  name: TEST
-parameters:
-  n_cv_splits: 5
-  validation_size: 0.2
-  stratified_cv: true
-  shuffle: 1
-  rf__n_estimators: 2000
-  rf__criterion: gini
-  rf__max_depth: 40
-  rf__class_weight: balanced
-  rf__max_features: 0.3
+# install pre-commit for the project
+pre-commit install
+
+# run all files
+pre-commit run --all-files
+
+# run committed files
+git commit
 ```
 
-You can change your hyperparams in `cli` like this
+# Training
 
 ```
-python demo_hydra.py parameters.n_cv_splits=10 parameters.validation_size=0.9
+python main.py \
+  parameters.root_data_dir="./data" \
+  parameters.n_fold=4 \
+  parameters.save_model_dir="./output" \
+  parameters.preprocess_text=False \
+  parameters.debug=False \
+  parameters.train_stage_1.select="base" \
+  parameters.train_stage_1.base_model_name="microsoft/deberta-v3-{select}" \
+  parameters.train_stage_1.model_path="" \
+  parameters.train_stage_1.output_dir="./" \
+  parameters.train_stage_1.freeze_embeddings=False \
+  parameters.train_stage_1.freeze_n_layers=6 \
+  parameters.train_stage_1.seed=42 \
+  parameters.train_stage_1.batch_size=2 \
+  parameters.train_stage_1.learning_rate=1e-5 \
+  parameters.train_stage_1.num_train_epochs=2 \
+  parameters.train_stage_1.per_device_train_batch_size=2 \
+  parameters.train_stage_1.per_device_eval_batch_size=4 \
+  parameters.train_stage_1.report_to="none" \
+  parameters.train_stage_1.evaluation_strategy="epoch" \
+  parameters.train_stage_1.save_strategy="epoch" \
+  parameters.train_stage_1.save_total_limit=1 \
+  parameters.train_stage_1.overwrite_output_dir=True \
+  parameters.train_stage_1.load_best_model_at_end=True \
+  parameters.train_stage_1.lr_scheduler_type='cosine' \
+  parameters.train_stage_1.metric_for_best_model="f1" \
+  parameters.train_stage_1.greater_is_better=True \
+  parameters.train_stage_1.weight_decay=0.01
 ```

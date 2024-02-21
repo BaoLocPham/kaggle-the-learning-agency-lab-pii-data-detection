@@ -131,6 +131,7 @@ def train(cfg):
         fn_kwargs={
             "tokenizer": tokenizer,
             "label2id": label2id,
+            "max_length": config.train_stage_1.max_len,
             "config": config},
         num_proc=2)
     # ds = ds.class_encode_column("group")
