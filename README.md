@@ -21,7 +21,7 @@ git commit
 # Training
 
 ```
-python main.py \
+python training.py \
   parameters.root_data_dir="./data" \
   parameters.n_fold=4 \
   parameters.save_model_dir="./output" \
@@ -40,6 +40,7 @@ python main.py \
   parameters.train_stage_1.per_device_train_batch_size=2 \
   parameters.train_stage_1.per_device_eval_batch_size=4 \
   parameters.train_stage_1.report_to="none" \
+  parameters.train_stage_1.do_eval=True \
   parameters.train_stage_1.evaluation_strategy="epoch" \
   parameters.train_stage_1.save_strategy="epoch" \
   parameters.train_stage_1.save_total_limit=1 \

@@ -102,7 +102,6 @@ def train(cfg):
     # If it doesn't exist, create the folder
     os.makedirs(config.output_dir, exist_ok=True)
     os.makedirs(config.train_stage_1.output_dir, exist_ok=True)
-    os.makedirs(config.train_spec_split, exist_ok=True)
     train, test, submission = read_data(
         config.root_data_dir, config=config, debug=config.debug  # type: ignore
     )
@@ -183,14 +182,15 @@ def train(cfg):
 
     args = TrainingArguments(
         output_dir=config.train_stage_1.output_dir,
-        fp16=True,
-        # warmup_steps=100,
+        fp16=config.train_stage_1.fp16,
         learning_rate=config.train_stage_1.learning_rate,
         num_train_epochs=config.train_stage_1.num_train_epochs,
         per_device_train_batch_size=config.train_stage_1.per_device_train_batch_size,
         per_device_eval_batch_size=config.train_stage_1.per_device_eval_batch_size,
+        gradient_accumulation_steps=config.train_stage_1.gradient_accumulation_steps,
         report_to=config.train_stage_1.report_to,
         evaluation_strategy=config.train_stage_1.evaluation_strategy,
+        do_eval=config.train_stage_1.do_eval,
         save_strategy=config.train_stage_1.save_strategy,
         save_total_limit=config.train_stage_1.save_total_limit,
         overwrite_output_dir=config.train_stage_1.overwrite_output_dir,
@@ -198,7 +198,9 @@ def train(cfg):
         lr_scheduler_type=config.train_stage_1.lr_scheduler_type,
         metric_for_best_model=config.train_stage_1.metric_for_best_model,
         greater_is_better=config.train_stage_1.greater_is_better,
-        weight_decay=config.train_stage_1.weight_decay
+        warmup_ratio=config.train_stage_1.warmup_ratio,
+        weight_decay=config.train_stage_1.weight_decay,
+        logging_steps=config.train_stage_1.logging_steps
     )
     trainer = Trainer(
         model=model,
@@ -211,6 +213,7 @@ def train(cfg):
     )
     trainer.train()
     trainer.save_model(config.train_stage_1.output_dir)
+    tokenizer.save_pretrained(config.train_stage_1.output_dir)
     if config.train_stage_1.wandb:
         wandb.finish()
 
