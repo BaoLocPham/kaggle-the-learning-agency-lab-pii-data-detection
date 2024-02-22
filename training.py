@@ -2,7 +2,7 @@ from seqeval.metrics import recall_score, precision_score
 from itertools import chain
 from functools import partial
 from dataset.learning_agency_dataset import tokenize
-from dataset.utils import read_data
+from dataset.utils import read_data, read_external_data
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 from transformers import AutoModelForTokenClassification, DataCollatorForTokenClassification
 from datasets import Dataset
@@ -95,6 +95,33 @@ def train(cfg):
 
     LOGGER.info(f"DEBUG MODE: {config.debug}")
     LOGGER.info(f"Train Size: {len(train)}")
+
+    if config.external_data_dir[0] != "":
+        external_data = read_external_data(
+            os.path.join(
+                config.external_data_dir[0],
+                config.external_data_file[0]))
+    if config.external_data_dir[1] != "":
+        moredata = read_external_data(
+            os.path.join(
+                config.external_data_dir[1],
+                config.external_data_file[1]))
+
+    if config.down_sampling and config.external_data_dir[
+            0] != "" and config.external_data_dir[1] != "":
+        # downsampling of negative examples
+        p = []  # positive samples (contain relevant labels)
+        # negative samples (presumably contain entities that are possibly
+        # wrongly classified as entity)
+        n = []
+        for d in train:
+            if any(np.array(d["labels"]) != "O"):
+                p.append(d)
+            else:
+                n.append(d)
+        train = moredata + external_data + p + n[:len(n) // 3]
+        LOGGER.info(
+            f"Train Size After combined and downsampling: {len(train)}")
 
     all_labels = sorted(list(set(chain(*[x["labels"] for x in train]))))
     label2id = {l: i for i, l in enumerate(all_labels)}

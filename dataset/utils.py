@@ -50,6 +50,13 @@ def read_data(data_dir: str, config: None, debug=False):
     return train, test, submission
 
 
+def read_external_data(data_path: str):
+    data = json.load(open(data_path))
+    LOGGER.info(f"{data_path} length: {len(data)}")
+    LOGGER.info(f"External data keys: {data[0].keys()}")
+    return data
+
+
 def read_data_stage_2(data_dir, file_name):
     data_df = pd.read_csv(os.path.join(data_dir, file_name))
     return data_df
