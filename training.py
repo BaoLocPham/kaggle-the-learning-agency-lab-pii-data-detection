@@ -133,7 +133,7 @@ def train(cfg):
 
     ds = Dataset.from_dict({
         "full_text": [x["full_text"] for x in train],
-        "document": [x["document"] for x in train],
+        "document": [str(x["document"]) for x in train],
         "tokens": [x["tokens"] for x in train],
         "trailing_whitespace": [x["trailing_whitespace"] for x in train],
         "provided_labels": [x["labels"] for x in train],
