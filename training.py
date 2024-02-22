@@ -96,33 +96,6 @@ def train(cfg):
     LOGGER.info(f"DEBUG MODE: {config.debug}")
     LOGGER.info(f"Train Size: {len(train)}")
 
-    # if config.external_data_dir[0] != "":
-    #     external_data = read_external_data(
-    #         os.path.join(
-    #             config.external_data_dir[0],
-    #             config.external_data_file[0]))
-    # if config.external_data_dir[1] != "":
-    #     moredata = read_external_data(
-    #         os.path.join(
-    #             config.external_data_dir[1],
-    #             config.external_data_file[1]))
-
-    # if config.down_sampling and config.external_data_dir[
-    #         0] != "" and config.external_data_dir[1] != "":
-    #     # downsampling of negative examples
-    #     p = []  # positive samples (contain relevant labels)
-    #     # negative samples (presumably contain entities that are possibly
-    #     # wrongly classified as entity)
-    #     n = []
-    #     for d in train:
-    #         if any(np.array(d["labels"]) != "O"):
-    #             p.append(d)
-    #         else:
-    #             n.append(d)
-    #     train = moredata + external_data + p + n[:len(n) // 3]
-    #     LOGGER.info(
-    #         f"Train Size After combined and downsampling: {len(train)}")
-
     all_labels = sorted(list(set(chain(*[x["labels"] for x in train]))))
     label2id = {l: i for i, l in enumerate(all_labels)}
     id2label = {v: k for k, v in label2id.items()}
@@ -164,10 +137,12 @@ def train(cfg):
             LOGGER.info(f"{(t,id2label[l])}")
 
     # may want to try to balance classes in splits
-    final_ds = ds.train_test_split(
-        test_size=config.train_stage_1.test_size,
-        seed=42)  # cannot use stratify_by_column='group'
-    final_ds
+    if config.train_stage_1.do_eval:
+        final_ds = ds.train_test_split(
+            test_size=config.train_stage_1.test_size,
+            seed=42)  # cannot use stratify_by_column='group'
+    else:
+        final_ds = ds
 
     model = AutoModelForTokenClassification.from_pretrained(
         config.train_stage_1.model_path,
@@ -218,11 +193,13 @@ def train(cfg):
     trainer = Trainer(
         model=model,
         args=args,
-        train_dataset=final_ds["train"],
-        eval_dataset=final_ds["test"],
+        train_dataset=final_ds["train"] if config.train_stage_1.do_eval else final_ds,
+        eval_dataset=final_ds["test"] if config.train_stage_1.do_eval else final_ds,
         data_collator=collator,
         tokenizer=tokenizer,
-        compute_metrics=partial(compute_metrics, all_labels=all_labels),
+        compute_metrics=partial(
+            compute_metrics,
+            all_labels=all_labels),
     )
     trainer.train()
     trainer.save_model(config.train_stage_1.output_dir)
