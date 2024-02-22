@@ -56,7 +56,7 @@ python training.py \
 
 # Inference
 ```
-python training.py \
+python inference.py \
   parameters.root_data_dir="/kaggle/input/pii-detection-removal-from-educational-data" \
   parameters.tmp_dir="./tmp" \
   parameters.preprocess_text=False \
