@@ -154,15 +154,12 @@ def train(cfg):
     collator = DataCollatorForTokenClassification(
         tokenizer, pad_to_multiple_of=16)
 
-    config.train_stage_1.freeze_embeddings = False
-    config.train_stage_1.freeze_n_layers = 6
-
     if config.train_stage_1.freeze_embeddings:
         LOGGER.info('Freezing embeddings.')
         for param in model.deberta.embeddings.parameters():
             param.requires_grad = False
 
-    if config.train_stage_1.freeze_n_layers > 0:
+    if config.train_stage_1.freeze_embeddings and config.train_stage_1.freeze_n_layers > 0:
         LOGGER.info(f'Freezing {config.train_stage_1.freeze_n_layers} layers.')
         for layer in model.deberta.encoder.layer[:
                                                  config.train_stage_1.freeze_n_layers]:
@@ -190,17 +187,29 @@ def train(cfg):
         warmup_ratio=config.train_stage_1.warmup_ratio,
         weight_decay=config.train_stage_1.weight_decay,
         logging_steps=config.train_stage_1.logging_steps)
-    trainer = Trainer(
-        model=model,
-        args=args,
-        train_dataset=final_ds["train"] if config.train_stage_1.do_eval else final_ds,
-        eval_dataset=final_ds["test"] if config.train_stage_1.do_eval else final_ds,
-        data_collator=collator,
-        tokenizer=tokenizer,
-        compute_metrics=partial(
-            compute_metrics,
-            all_labels=all_labels),
-    )
+    if config.train_stage_1.do_eval:
+        trainer = Trainer(
+            model=model,
+            args=args,
+            train_dataset=final_ds["train"] ,
+            eval_dataset=final_ds["test"],
+            data_collator=collator,
+            tokenizer=tokenizer,
+            compute_metrics=partial(
+                compute_metrics,
+                all_labels=all_labels),
+        )
+    else:
+        trainer = Trainer(
+            model=model,
+            args=args,
+            train_dataset=final_ds,
+            data_collator=collator,
+            tokenizer=tokenizer,
+            compute_metrics=partial(
+                compute_metrics,
+                all_labels=all_labels),
+        )
     trainer.train()
     trainer.save_model(config.train_stage_1.output_dir)
     tokenizer.save_pretrained(config.train_stage_1.output_dir)
