@@ -9,9 +9,9 @@ wandb:
   job_type: Train_Supervised
 parameters:
   root_data_dir: "./data"
-  external_data_dir: [""]
-  external_data_file: [""]
-  down_sampling: False
+  # external_data_dir: [""]
+  # external_data_file: [""]
+  # down_sampling: False
   n_fold: 4
   save_model_dir: "./outputs"
   tmp_dir: "./tmp"
