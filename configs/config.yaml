@@ -53,19 +53,13 @@ parameters:
 
 
   inference_stage_1:
-    is_ensemble: False
-    input_prepared_dir: "./"
-    input_prepared_file: "test.csv"
-    select: "base"
-    model_name: "microsoft/deberta-v3-{select}"
-    only_model_name: "deberta-v3-{select}"
-    n_fold: 4
-    fold_to_inference: 0
-    batch_size: 32
-    freezing: False
-    max_len: 32
-    pooling: "GemText"
-    load_model_dir: ""
-    output_dir: ""
+    wandb: False
+    model_path: ""
+    output_dir: "./"
+    max_len: 512
+    threshold: 0.9
+    freeze_embeddings: False
+    freeze_n_layers: 6
+    seed: 42
     have_next_stage: False
-    output_file: "stage_1_output.csv"
+    output_path: "submission.csv"

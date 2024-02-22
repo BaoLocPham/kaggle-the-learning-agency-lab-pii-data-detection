@@ -1,35 +1,21 @@
 from seqeval.metrics import recall_score, precision_score
-from seqeval.metrics import f1_score
-from seqeval.metrics import classification_report
-import json
-import argparse
 from itertools import chain
 from functools import partial
 from dataset.learning_agency_dataset import tokenize
 from dataset.utils import read_data
-
-import torch
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 from transformers import AutoModelForTokenClassification, DataCollatorForTokenClassification
-import evaluate
-from datasets import Dataset, features
+from datasets import Dataset
 import numpy as np
-
 from utils import get_logger, seed_everything
 import wandb
 from omegaconf import OmegaConf
 import hydra
-from tqdm import tqdm
-import pandas as pd
 import numpy as np
 from pathlib import Path
 from collections import Counter
-import random
 import warnings
 import os
-import gc
-import re
-import shutil
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -201,8 +187,7 @@ def train(cfg):
         greater_is_better=config.train_stage_1.greater_is_better,
         warmup_ratio=config.train_stage_1.warmup_ratio,
         weight_decay=config.train_stage_1.weight_decay,
-        logging_steps=config.train_stage_1.logging_steps
-    )
+        logging_steps=config.train_stage_1.logging_steps)
     trainer = Trainer(
         model=model,
         args=args,
