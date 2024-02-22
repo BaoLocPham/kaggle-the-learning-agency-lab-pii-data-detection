@@ -3,7 +3,6 @@ omegaconf==2.3.0
 accelerate==0.25.0
 autopep8==2.0.4
 huggingface-hub==0.20.2
-Cython
 kiwisolver==1.4.4
 leven==1.0.4
 Levenshtein==0.23.0
@@ -11,8 +10,6 @@ loguru==0.7.2
 Markdown==3.4.4
 markovify==0.9.4
 marshmallow==3.20.2
-numba==0.57.1
-numexpr==2.8.8
 numpy
 onnx==1.15.0
 opencv-python
