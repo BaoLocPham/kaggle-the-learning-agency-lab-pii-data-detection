@@ -39,6 +39,6 @@ tensorflow
 seqeval==1.2.2
 evaluate==0.4.1
 sentencepiece==0.1.99
-autocorrect
-spellchecker
-pyspellchecker
+# autocorrect
+# spellchecker
+# pyspellchecker
