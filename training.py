@@ -2,7 +2,7 @@ from seqeval.metrics import recall_score, precision_score
 from itertools import chain
 from functools import partial
 from dataset.learning_agency_dataset import tokenize
-from dataset.utils import read_data, read_external_data
+from dataset.utils import read_data
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 from transformers import AutoModelForTokenClassification, DataCollatorForTokenClassification
 from datasets import Dataset
@@ -12,8 +12,6 @@ import wandb
 from omegaconf import OmegaConf
 import hydra
 import numpy as np
-from pathlib import Path
-from collections import Counter
 import warnings
 import os
 import sys
@@ -191,7 +189,7 @@ def train(cfg):
         trainer = Trainer(
             model=model,
             args=args,
-            train_dataset=final_ds["train"] ,
+            train_dataset=final_ds["train"],
             eval_dataset=final_ds["test"],
             data_collator=collator,
             tokenizer=tokenizer,
