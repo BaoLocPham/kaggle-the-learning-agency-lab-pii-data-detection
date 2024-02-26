@@ -54,6 +54,10 @@ parameters:
     model_path: ""
     output_dir: "./"
     max_len: 512
+    return_offsets_mapping: True
+    truncation: True
+    stride: 384
+    return_overflowing_tokens: True
     threshold: 0.9
     freeze_embeddings: False
     freeze_n_layers: 6

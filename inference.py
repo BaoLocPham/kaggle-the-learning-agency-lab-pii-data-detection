@@ -33,7 +33,7 @@ class CFG:
 config = CFG()
 
 
-def tokenize(example, tokenizer, max_length):
+def tokenize(example, tokenizer, config):
     text = []
     token_map = []
 
@@ -51,9 +51,12 @@ def tokenize(example, tokenizer, max_length):
 
     tokenized = tokenizer(
         "".join(text),
-        return_offsets_mapping=True,
-        truncation=True,
-        max_length=max_length)
+        return_offsets_mapping=config.return_offsets_mapping,
+        truncation=config.truncation,
+        max_length=config.max_length,
+        stride=config.stride,
+        return_overflowing_tokens=config.return_overflowing_tokens
+    )
 
     return {
         **tokenized,
@@ -97,7 +100,7 @@ def infer(cfg):
         tokenize,
         fn_kwargs={
             "tokenizer": tokenizer,
-            "max_length": config.inference_stage_1.max_len},
+            "config": config.inference_stage_1},
         num_proc=config.num_proc)
 
     model = AutoModelForTokenClassification.from_pretrained(

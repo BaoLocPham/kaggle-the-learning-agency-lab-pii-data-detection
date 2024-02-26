@@ -64,6 +64,10 @@ python inference.py \
   parameters.inference_stage_1.model_path="" \
   parameters.inference_stage_1.output_dir="./" \
   parameters.inference_stage_1.max_len=1024 \
+  parameters.inference_stage_1.stride=384 \
+  parameters.inference_stage_1.truncation=True \
+  parameters.inference_stage_1.return_overflowing_tokens=True \
+  parameters.inference_stage_1.return_offsets_mapping=True \
   parameters.inference_stage_1.threshold=0.9 \
   parameters.inference_stage_1.freeze_embeddings=False \
   parameters.inference_stage_1.freeze_n_layers=6 \

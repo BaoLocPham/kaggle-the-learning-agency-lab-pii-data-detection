@@ -20,7 +20,10 @@ def tokenize(example, tokenizer, label2id, max_length, config: None):
             labels.append("O")
 
     # actual tokenization
-    tokenized = tokenizer("".join(text), return_offsets_mapping=True, max_length=max_length)
+    tokenized = tokenizer(
+        "".join(text),
+        return_offsets_mapping=True,
+        max_length=max_length)
 
     labels = np.array(labels)
 
