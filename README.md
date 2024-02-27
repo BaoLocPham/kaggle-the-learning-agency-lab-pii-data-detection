@@ -66,6 +66,7 @@ python inference.py \
   parameters.inference_stage_1.max_len=1024 \
   parameters.inference_stage_1.stride=384 \
   parameters.inference_stage_1.truncation=True \
+  parameters.inference_stage_1.padding=True \
   parameters.inference_stage_1.return_overflowing_tokens=True \
   parameters.inference_stage_1.return_offsets_mapping=True \
   parameters.inference_stage_1.threshold=0.9 \

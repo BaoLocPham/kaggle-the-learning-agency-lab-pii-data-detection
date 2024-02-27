@@ -53,6 +53,7 @@ def tokenize(example, tokenizer, config):
         "".join(text),
         return_offsets_mapping=config.return_offsets_mapping,
         truncation=config.truncation,
+        padding=config.padding,
         max_length=config.max_len,
         stride=config.stride,
         return_overflowing_tokens=config.return_overflowing_tokens

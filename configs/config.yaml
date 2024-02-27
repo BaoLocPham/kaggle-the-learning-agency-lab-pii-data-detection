@@ -56,6 +56,7 @@ parameters:
     max_len: 512
     return_offsets_mapping: True
     truncation: True
+    padding: True
     stride: 384
     return_overflowing_tokens: True
     threshold: 0.9
