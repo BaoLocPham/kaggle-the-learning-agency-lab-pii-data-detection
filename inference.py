@@ -64,28 +64,31 @@ def tokenize(example, tokenizer, config):
         "token_map": token_map,
     }
 
+
 def backwards_map_preds(i, sub_predictions, max_len, stride):
-    if max_len != 1: # nothing to map backwards if sequence is too short to be split in the first place
+    if max_len != 1:  # nothing to map backwards if sequence is too short to be split in the first place
         if i == 0:
             # First sequence needs no SEP token (used to end a sequence)
-            sub_predictions = sub_predictions[:,:-1,:]
-        elif i == max_len-1:
+            sub_predictions = sub_predictions[:, :-1, :]
+        elif i == max_len - 1:
             # End sequence needs to CLS token + Stride tokens
-            sub_predictions = sub_predictions[:,1+stride:,:] # CLS tokens + stride tokens
+            # CLS tokens + stride tokens
+            sub_predictions = sub_predictions[:, 1 + stride:, :]
         else:
             # Middle sequence needs to CLS token + Stride tokens + SEP token
-            sub_predictions = sub_predictions[:,1+stride:-1,:]
+            sub_predictions = sub_predictions[:, 1 + stride:-1, :]
     return sub_predictions
+
 
 def backwards_map_(i, row_attribute, max_len, stride):
     # Same logics as for backwards_map_preds - except lists instead of 3darray
     if max_len != 1:
         if i == 0:
             row_attribute = row_attribute[:-1]
-        elif i == max_len-1:
-            row_attribute = row_attribute[1+stride:]
+        elif i == max_len - 1:
+            row_attribute = row_attribute[1 + stride:]
         else:
-            row_attribute = row_attribute[1+stride:-1]
+            row_attribute = row_attribute[1 + stride:-1]
     return row_attribute
 
 
@@ -149,10 +152,10 @@ def infer(cfg):
     if config.inference_stage_1.stride != 0:
         preds = []
         ds_dict = {
-            "document":[],
-            "token_map":[],
-            "offset_mapping":[],
-            "tokens":[]
+            "document": [],
+            "token_map": [],
+            "offset_mapping": [],
+            "tokens": []
         }
 
         for row in ds:
@@ -163,40 +166,87 @@ def infer(cfg):
             for i, y in enumerate(row["offset_mapping"]):
                 # create new datasset for each of of the splits per document
                 x = Dataset.from_dict({
-                    "token_type_ids":[row["token_type_ids"][i]],
-                    "input_ids":[row["input_ids"][i]],
-                    "attention_mask":[row["attention_mask"][i]],
-                    "offset_mapping":[row["offset_mapping"][i]]
+                    "token_type_ids": [row["token_type_ids"][i]],
+                    "input_ids": [row["input_ids"][i]],
+                    "attention_mask": [row["attention_mask"][i]],
+                    "offset_mapping": [row["offset_mapping"][i]]
                 })
                 # predict for that split
                 pred = trainer.predict(x).predictions
                 # removing the stride and additional CLS & SEP that are created
-                row_preds.append(backwards_map_preds(i, pred, len(row["offset_mapping"], stride=config.inference_stage_1.stride)))
-                row_offset += backwards_map_(i, y, len(row["offset_mapping"], stride=config.inference_stage_1.stride))
-            
+                row_preds.append(
+                    backwards_map_preds(
+                        i, pred, len(
+                            row["offset_mapping"]), config.inference_stage_1.stride))
+                row_offset += backwards_map_(i,
+                                             y,
+                                             len(row["offset_mapping"]),
+                                             config.inference_stage_1.stride)
+
             # Finalize row
             ds_dict["document"].append(row["document"])
             ds_dict["tokens"].append(row["tokens"])
             ds_dict["token_map"].append(row["token_map"])
             ds_dict["offset_mapping"].append(row_offset)
-            
+
             # Finalize prediction collection by concattenating
-            p_concat = np.concatenate(row_preds, axis = 1)
+            p_concat = np.concatenate(row_preds, axis=1)
             preds.append(p_concat)
         preds_final = []
         for predictions in preds:
-            predictions_softmax = np.exp(predictions) / np.sum(np.exp(predictions), axis = 2).reshape(predictions.shape[0],predictions.shape[1],1)
+            predictions_softmax = np.exp(predictions) / np.sum(
+                np.exp(predictions), axis=2).reshape(
+                predictions.shape[0], predictions.shape[1], 1)
             predictions = predictions.argmax(-1)
-            predictions_without_O = predictions_softmax[:,:,:12].argmax(-1)
-            O_predictions = predictions_softmax[:,:,12]
+            predictions_without_O = predictions_softmax[:, :, :12].argmax(-1)
+            O_predictions = predictions_softmax[:, :, 12]
 
             threshold = 0.9
-            preds_final.append(np.where(O_predictions < threshold, predictions_without_O , predictions))
+            preds_final.append(
+                np.where(
+                    O_predictions < threshold,
+                    predictions_without_O,
+                    predictions))
+        ds = Dataset.from_dict(ds_dict)
+        pairs = []
+        document, token, label, token_str = [], [], [], []
+        for p, token_map, offsets, tokens, doc in zip(
+                preds_final, ds["token_map"], ds["offset_mapping"], ds["tokens"], ds["document"]):
+            for token_pred, (start_idx, end_idx) in zip(p[0], offsets):
+                label_pred = id2label[str(token_pred)]
+
+                if start_idx + end_idx == 0:
+                    continue
+
+                if token_map[start_idx] == -1:
+                    start_idx += 1
+
+                # ignore "\n\n"
+                while start_idx < len(
+                        token_map) and tokens[token_map[start_idx]].isspace():
+                    start_idx += 1
+
+                if start_idx >= len(token_map):
+                    break
+
+                token_id = token_map[start_idx]
+
+                # ignore "O" predictions and whitespace preds
+                if label_pred != "O" and token_id != -1:
+                    pair = (doc, token_id)
+
+                    if pair not in pairs:
+                        document.append(doc)
+                        token.append(token_id)
+                        label.append(label_pred)
+                        token_str.append(tokens[token_id])
+                        pairs.append(pair)
 
     else:
         predictions = trainer.predict(ds).predictions
-        pred_softmax = np.exp(predictions) / np.sum(np.exp(predictions),
-                                                    axis=2).reshape(predictions.shape[0], predictions.shape[1], 1)
+        pred_softmax = np.exp(predictions) / np.sum(
+            np.exp(predictions), axis=2).reshape(
+            predictions.shape[0], predictions.shape[1], 1)
 
         preds = predictions.argmax(-1)
         preds_without_O = pred_softmax[:, :, :12].argmax(-1)
@@ -205,40 +255,40 @@ def infer(cfg):
         threshold = config.inference_stage_1.threshold
         preds_final = np.where(O_preds < threshold, preds_without_O, preds)
 
-    triplets = []
-    document, token, label, token_str = [], [], [], []
-    for p, token_map, offsets, tokens, doc in zip(
-            preds_final, ds["token_map"], ds["offset_mapping"], ds["tokens"], ds["document"]):
+        triplets = []
+        document, token, label, token_str = [], [], [], []
+        for p, token_map, offsets, tokens, doc in zip(
+                preds_final, ds["token_map"], ds["offset_mapping"], ds["tokens"], ds["document"]):
 
-        for token_pred, (start_idx, end_idx) in zip(p, offsets):
-            label_pred = id2label[str(token_pred)]
+            for token_pred, (start_idx, end_idx) in zip(p, offsets):
+                label_pred = id2label[str(token_pred)]
 
-            if start_idx + end_idx == 0:
-                continue
+                if start_idx + end_idx == 0:
+                    continue
 
-            if token_map[start_idx] == -1:
-                start_idx += 1
+                if token_map[start_idx] == -1:
+                    start_idx += 1
 
-            # ignore "\n\n"
-            while start_idx < len(
-                    token_map) and tokens[token_map[start_idx]].isspace():
-                start_idx += 1
+                # ignore "\n\n"
+                while start_idx < len(
+                        token_map) and tokens[token_map[start_idx]].isspace():
+                    start_idx += 1
 
-            if start_idx >= len(token_map):
-                break
+                if start_idx >= len(token_map):
+                    break
 
-            token_id = token_map[start_idx]
+                token_id = token_map[start_idx]
 
-            # ignore "O" predictions and whitespace preds
-            if label_pred != "O" and token_id != -1:
-                triplet = (label_pred, token_id, tokens[token_id])
+                # ignore "O" predictions and whitespace preds
+                if label_pred != "O" and token_id != -1:
+                    triplet = (label_pred, token_id, tokens[token_id])
 
-                if triplet not in triplets:
-                    document.append(doc)
-                    token.append(token_id)
-                    label.append(label_pred)
-                    token_str.append(tokens[token_id])
-                    triplets.append(triplet)
+                    if triplet not in triplets:
+                        document.append(doc)
+                        token.append(token_id)
+                        label.append(label_pred)
+                        token_str.append(tokens[token_id])
+                        triplets.append(triplet)
 
     df = pd.DataFrame({
         "document": document,
