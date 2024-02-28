@@ -64,6 +64,30 @@ def tokenize(example, tokenizer, config):
         "token_map": token_map,
     }
 
+def backwards_map_preds(i, sub_predictions, max_len, stride):
+    if max_len != 1: # nothing to map backwards if sequence is too short to be split in the first place
+        if i == 0:
+            # First sequence needs no SEP token (used to end a sequence)
+            sub_predictions = sub_predictions[:,:-1,:]
+        elif i == max_len-1:
+            # End sequence needs to CLS token + Stride tokens
+            sub_predictions = sub_predictions[:,1+stride:,:] # CLS tokens + stride tokens
+        else:
+            # Middle sequence needs to CLS token + Stride tokens + SEP token
+            sub_predictions = sub_predictions[:,1+stride:-1,:]
+    return sub_predictions
+
+def backwards_map_(i, row_attribute, max_len, stride):
+    # Same logics as for backwards_map_preds - except lists instead of 3darray
+    if max_len != 1:
+        if i == 0:
+            row_attribute = row_attribute[:-1]
+        elif i == max_len-1:
+            row_attribute = row_attribute[1+stride:]
+        else:
+            row_attribute = row_attribute[1+stride:-1]
+    return row_attribute
+
 
 @hydra.main(version_base=None, config_path="configs", config_name="config")
 def infer(cfg):
@@ -121,16 +145,65 @@ def infer(cfg):
     )
 
     #### INFER ####
-    predictions = trainer.predict(ds).predictions
-    pred_softmax = np.exp(predictions) / np.sum(np.exp(predictions),
-                                                axis=2).reshape(predictions.shape[0], predictions.shape[1], 1)
 
-    preds = predictions.argmax(-1)
-    preds_without_O = pred_softmax[:, :, :12].argmax(-1)
-    O_preds = pred_softmax[:, :, 12]
+    if config.inference_stage_1.stride != 0:
+        preds = []
+        ds_dict = {
+            "document":[],
+            "token_map":[],
+            "offset_mapping":[],
+            "tokens":[]
+        }
 
-    threshold = config.inference_stage_1.threshold
-    preds_final = np.where(O_preds < threshold, preds_without_O, preds)
+        for row in ds:
+            # keys that need to be re-assembled
+            row_preds = []
+            row_offset = []
+
+            for i, y in enumerate(row["offset_mapping"]):
+                # create new datasset for each of of the splits per document
+                x = Dataset.from_dict({
+                    "token_type_ids":[row["token_type_ids"][i]],
+                    "input_ids":[row["input_ids"][i]],
+                    "attention_mask":[row["attention_mask"][i]],
+                    "offset_mapping":[row["offset_mapping"][i]]
+                })
+                # predict for that split
+                pred = trainer.predict(x).predictions
+                # removing the stride and additional CLS & SEP that are created
+                row_preds.append(backwards_map_preds(i, pred, len(row["offset_mapping"], stride=config.inference_stage_1.stride)))
+                row_offset += backwards_map_(i, y, len(row["offset_mapping"], stride=config.inference_stage_1.stride))
+            
+            # Finalize row
+            ds_dict["document"].append(row["document"])
+            ds_dict["tokens"].append(row["tokens"])
+            ds_dict["token_map"].append(row["token_map"])
+            ds_dict["offset_mapping"].append(row_offset)
+            
+            # Finalize prediction collection by concattenating
+            p_concat = np.concatenate(row_preds, axis = 1)
+            preds.append(p_concat)
+        preds_final = []
+        for predictions in preds:
+            predictions_softmax = np.exp(predictions) / np.sum(np.exp(predictions), axis = 2).reshape(predictions.shape[0],predictions.shape[1],1)
+            predictions = predictions.argmax(-1)
+            predictions_without_O = predictions_softmax[:,:,:12].argmax(-1)
+            O_predictions = predictions_softmax[:,:,12]
+
+            threshold = 0.9
+            preds_final.append(np.where(O_predictions < threshold, predictions_without_O , predictions))
+
+    else:
+        predictions = trainer.predict(ds).predictions
+        pred_softmax = np.exp(predictions) / np.sum(np.exp(predictions),
+                                                    axis=2).reshape(predictions.shape[0], predictions.shape[1], 1)
+
+        preds = predictions.argmax(-1)
+        preds_without_O = pred_softmax[:, :, :12].argmax(-1)
+        O_preds = pred_softmax[:, :, 12]
+
+        threshold = config.inference_stage_1.threshold
+        preds_final = np.where(O_preds < threshold, preds_without_O, preds)
 
     triplets = []
     document, token, label, token_str = [], [], [], []
