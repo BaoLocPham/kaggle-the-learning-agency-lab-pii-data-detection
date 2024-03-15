@@ -238,7 +238,7 @@ def infer(cfg):
                     "O",
                     "B-EMAIL",
                     "B-PHONE_NUM",
-                        "I-PHONE_NUM") and token_id == -1:
+                        "I-PHONE_NUM") or token_id == -1:
                     continue
 
                 pair = (doc, token_id)
