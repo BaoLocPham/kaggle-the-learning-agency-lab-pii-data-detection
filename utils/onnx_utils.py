@@ -1,4 +1,4 @@
-from transformers.convert_graph_to_onnx import convert
+# from transformers.convert_graph_to_onnx import convert 
 from onnxconverter_common import auto_convert_mixed_precision_model_path
 import onnx
 import torch.onnx

@@ -34,13 +34,13 @@ nltk==3.2.4
 gensim==4.3.2
 transformers==4.37.0
 torch==2.1.2
-tensorflow>=2.15.0
+tensorflow
 seqeval==1.2.2
 evaluate==0.4.1
 sentencepiece==0.1.99
-onnxruntime_gpu==1.17.1
-onnx==1.16.0
-onnxconverter_common==1.14.0
+# onnxruntime_gpu==1.17.1
+# onnx==1.16.0
+# onnxconverter_common==1.14.0
 # autocorrect
 # spellchecker
 # pyspellchecker
