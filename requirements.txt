@@ -11,7 +11,6 @@ Markdown==3.4.4
 markovify==0.9.4
 marshmallow==3.20.2
 numpy
-onnx==1.15.0
 opencv-python
 openpyxl
 optuna==3.5.0
@@ -39,6 +38,9 @@ tensorflow
 seqeval==1.2.2
 evaluate==0.4.1
 sentencepiece==0.1.99
+onnxruntime_gpu==1.17.1
+onnx==1.16.0
+onnxconverter_common==1.14.0
 # autocorrect
 # spellchecker
 # pyspellchecker

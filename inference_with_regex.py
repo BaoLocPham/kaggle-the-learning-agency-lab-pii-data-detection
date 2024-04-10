@@ -306,10 +306,8 @@ def infer(cfg):
             for matched_span in matched_spans:
                 for intermediate, token_idx in enumerate(matched_span):
                     prefix = "I" if intermediate else "B"
-                    phone_nums.append(
-                        {"document": _data["document"], "token": token_idx, "label": f"{prefix}-PHONE_NUM",
-                         "token_str": _data["tokens"][token_idx]}
-                    )
+                    phone_nums.append({"document": _data["document"], "token": token_idx, "label": f"{
+                        prefix}-PHONE_NUM", "token_str": _data["tokens"][token_idx]})
 
     df = pd.DataFrame(processed + phone_nums + emails)
     # Assign each row a unique 'row_id'

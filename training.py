@@ -124,7 +124,7 @@ def train(cfg):
 
     for t, l in zip(x["tokens"], x["provided_labels"]):
         if l != "O":
-            LOGGER.info(f"{(t,l)}")
+            LOGGER.info(f"{(t, l)}")
 
     LOGGER.info("*" * 100)
 
@@ -132,7 +132,7 @@ def train(cfg):
             tokenizer.convert_ids_to_tokens(
             x["input_ids"]), x["labels"]):
         if id2label[l] != "O":
-            LOGGER.info(f"{(t,id2label[l])}")
+            LOGGER.info(f"{(t, id2label[l])}")
 
     # may want to try to balance classes in splits
     if config.train_stage_1.do_eval:
@@ -140,6 +140,7 @@ def train(cfg):
             test_size=config.train_stage_1.test_size,
             seed=42)  # cannot use stratify_by_column='group'
     else:
+        LOGGER.info("No Eval - Model is full fit")
         final_ds = ds
 
     model = AutoModelForTokenClassification.from_pretrained(

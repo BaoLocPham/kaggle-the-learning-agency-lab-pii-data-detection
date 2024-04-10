@@ -65,3 +65,14 @@ parameters:
     seed: 42
     have_next_stage: False
     output_path: "submission.csv"
+
+  inference_with_onnx:
+    model_path: [""]
+    output_converted_dir: "./"
+    convert_before_inference: False
+    quantizated_model_dir: "/kaggle/working"
+    truncation: True
+    padding: False #'max_length'
+    max_length: 3574
+    doc_stride: 512
+    batch_size: 1
