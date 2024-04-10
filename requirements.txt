@@ -34,7 +34,7 @@ nltk==3.2.4
 gensim==4.3.2
 transformers==4.37.0
 torch==2.1.2
-tensorflow
+tensorflow>=2.15.0
 seqeval==1.2.2
 evaluate==0.4.1
 sentencepiece==0.1.99
