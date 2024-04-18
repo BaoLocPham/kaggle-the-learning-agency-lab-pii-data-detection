@@ -4,6 +4,12 @@ from dataset.utils import read_test
 from transformers import AutoTokenizer, Trainer, TrainingArguments
 from transformers import AutoModelForTokenClassification, DataCollatorForTokenClassification
 from datasets import Dataset
+from torch.utils.data import DataLoader
+from transformers.convert_graph_to_onnx import convert
+from onnxconverter_common import auto_convert_mixed_precision_model_path
+import onnx
+import torch.onnx
+import onnxruntime
 from utils import (
     get_logger,
     seed_everything,
@@ -18,6 +24,7 @@ import pandas as pd
 from pathlib import Path
 import warnings
 import os
+import gc
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
@@ -130,8 +137,7 @@ def post_process_predicts(processed_predictions, ds, id2label):
         for matched_span in matched_spans:
             for intermediate, token_idx in enumerate(matched_span):
                 prefix = "I" if intermediate else "B"
-                phone_nums.append({"document": doc, "token": token_idx, "label": f"{
-                                  prefix}-PHONE_NUM", "token_str": tokens[token_idx]})
+                phone_nums.append({"document": doc, "token": token_idx, "label": f"{prefix}-PHONE_NUM", "token_str": tokens[token_idx]})
         # url
         matches = url_regex.findall(full_text)
         if not matches:
@@ -142,8 +148,7 @@ def post_process_predicts(processed_predictions, ds, id2label):
         for matched_span in matched_spans:
             for intermediate, token_idx in enumerate(matched_span):
                 prefix = "I" if intermediate else "B"
-                urls.append({"document": doc, "token": token_idx, "label": f"{
-                            prefix}-URL_PERSONAL", "token_str": tokens[token_idx]})
+                urls.append({"document": doc, "token": token_idx, "label": f"{prefix}-URL_PERSONAL", "token_str": tokens[token_idx]})
     return processed, phone_nums, emails, urls
 
 
@@ -151,6 +156,7 @@ def post_process_predicts(processed_predictions, ds, id2label):
 def infer(cfg):
     LOGGER.info(f"{OmegaConf.to_yaml(cfg)}")
     config.__dict__.update(cfg.parameters)
+    
 
     # If it doesn't exist, create the folder
     os.makedirs(config.output_dir, exist_ok=True)
@@ -164,20 +170,20 @@ def infer(cfg):
     model_config = json.load(
         open(
             Path(
-                config.inference_with_onnx.model_path) /
-            "config.json"))
+                list(config.inference_with_onnx.model_path.keys())[0], 
+            "config.json")))
     id2label = model_config["id2label"]
     LOGGER.info(f"id2label: {id2label}")
 
     tokenizer = AutoTokenizer.from_pretrained(
-        config.inference_with_onnx.model_path)
+        list(config.inference_with_onnx.model_path.keys())[0])
 
     keep_cols = {"input_ids", "attention_mask"}
     collator = DataCollatorForTokenClassification(
         tokenizer, pad_to_multiple_of=512)
 
     # test_ds = load_from_disk(f'{config.save_dir}test.dataset')
-
+    df_test = pd.DataFrame(test)
     ds = Dataset.from_pandas(df_test)
     ds = ds.map(
         tokenize_row,
@@ -188,6 +194,7 @@ def infer(cfg):
         num_proc=2,
         desc="Tokenizing",
     )
+    test_ds = ds
     test_ds = test_ds.remove_columns(
         [c for c in test_ds.column_names if c not in keep_cols])
     config.data_length = len(test_ds)
@@ -207,9 +214,9 @@ def infer(cfg):
     predictions_softmax_logits = []
     all_preds = []
 
-    for model_path, weight in config.inference_with_onnx.model_paths.items():
+    for model_path, weight in config.inference_with_onnx.model_path.items():
 
-        fold = config.trn_fold
+        # fold = config.trn_fold
 
         if config.inference_with_onnx.convert_before_inference:
 
@@ -217,7 +224,7 @@ def infer(cfg):
             model = AutoModelForTokenClassification.from_pretrained(model_path)
 
             # Converting it to ONNX to a temp folder
-            converted_model_name = temp_data_folder + "original_model.onnx"
+            converted_model_name = config.inference_with_onnx.temp_data_folder + "original_model.onnx"
             predictions_softmax_all = predict_and_convert(
                 test_dataloader, model, config, converted_model_name)
             del model
@@ -226,7 +233,7 @@ def infer(cfg):
 
             # In commit mode, save all quantized models with different names to create a dataset and reuse them later bypassing
             # vquantization and conversion
-            quantized_model_name = f"{config.inference_with_onnx.quantized_model_dir}/optimized" + \
+            quantized_model_name = f"{config.inference_with_onnx.quantizated_model_dir}/optimized" + \
                 model_path.split("/")[-1] + ".onnx"
             # data path should be relative
             quantized_data_path = "optimized" + \
@@ -241,13 +248,13 @@ def infer(cfg):
                 quantized_data_path)
 
         else:
+            
             # Use already converted models, you can make a commit notebook once and save output models to a dataset,
             # for example, /kaggle/input/toonnx2-converted-models
-            quantized_model_name = config.converted_path + "/optimized" + \
-                model_path.split("/")[-1] + ".onnx"
-
+            quantized_model_name = os.path.join(config.inference_with_onnx.quantizated_model_dir, os.path.basename(model_path), os.path.basename(model_path)+ ".onnx") 
+            LOGGER.info(f"Loading quantized model name: {quantized_model_name}")
         # Inference with ONNX
-        print("Inference")
+        LOGGER.info("Inference")
 
         # Create ONNX Runtime session for GPU
         session = onnxruntime.InferenceSession(

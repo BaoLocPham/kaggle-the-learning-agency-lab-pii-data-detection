@@ -8,9 +8,9 @@ wandb:
   group: learning-agency-lab-pil-data-detection_training
   job_type: Train_Supervised
 parameters:
-  root_data_dir: "./data"
+  root_data_dir: "/workspace/data"
   n_fold: 4
-  save_model_dir: "./outputs"
+  save_model_dir: "/workspace/outputs"
   tmp_dir: "./tmp"
   preprocess_text: False
   target: [
@@ -19,6 +19,7 @@ parameters:
     "I-NAME_STUDENT", "I-PHONE_NUM", "I-STREET_ADDRESS", "I-URL_PERSONAL"]
   num_proc: 3
   debug: False
+  device: cpu
   train_stage_1:
     wandb: False
     model_path: ""
@@ -67,10 +68,16 @@ parameters:
     output_path: "submission.csv"
 
   inference_with_onnx:
-    model_path: [""]
-    output_converted_dir: "./"
-    convert_before_inference: False
-    quantizated_model_dir: "/kaggle/working"
+    model_path: {
+      "/workspace/deberta-v3-base-2048-all-fit": 10/10,
+      "/workspace/deberta-v3-large-1024-all-fit": 10/10,
+      "/workspace/deberta-v3-large-2048-all-fit": 10/10,
+    }
+    temp_data_folder: "/workspace/tmp/"
+    output_converted_dir: "/workspace/onnx"
+    converted_path: "/workspace/onnx"
+    convert_before_inference: True
+    quantizated_model_dir: "/workspace/onnx"
     truncation: True
     padding: False #'max_length'
     max_length: 3574
